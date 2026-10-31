@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -306,17 +308,65 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
 @Composable
 private fun ArcReactor(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "reactor")
+    val rotation by transition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing)),
+        label = "outerRotation"
+    )
+    val counterRotation by transition.animateFloat(
+        initialValue = 360f, targetValue = 0f,
+        animationSpec = infiniteRepeatable(tween(6200, easing = LinearEasing)),
+        label = "innerRotation"
+    )
+    val pulse by transition.animateFloat(
+        initialValue = 0.72f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "corePulse"
+    )
     Canvas(modifier) {
         val c = Offset(size.width / 2f, size.height / 2f)
-        val radius = size.minDimension * 0.43f
-        drawCircle(Color(0xFF123C52), radius = radius * 1.12f, center = c, style = Stroke(width = radius * 0.10f))
-        drawCircle(ReactorCyan.copy(alpha = 0.22f), radius = radius * 0.94f, center = c, style = Stroke(width = radius * 0.035f))
-        drawCircle(ReactorCyan, radius = radius * 0.78f, center = c, style = Stroke(width = radius * 0.055f))
-        drawCircle(Color(0xFF1A7892), radius = radius * 0.58f, center = c, style = Stroke(width = radius * 0.09f))
-        drawCircle(ReactorCyan.copy(alpha = 0.18f), radius = radius * 0.40f, center = c)
-        drawCircle(ReactorCyan, radius = radius * 0.19f, center = c)
-        drawCircle(Color.White.copy(alpha = 0.85f), radius = radius * 0.075f, center = c)
-        drawArc(ReactorCyan, -65f, 95f, false, topLeft = Offset(c.x - radius, c.y - radius), size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2), style = Stroke(width = radius * 0.09f))
-        drawArc(Color(0xFF2A91AA), 115f, 95f, false, topLeft = Offset(c.x - radius, c.y - radius), size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2), style = Stroke(width = radius * 0.07f))
+        val r = size.minDimension * 0.43f
+        val ring = androidx.compose.ui.geometry.Size(r * 2, r * 2)
+        val top = Offset(c.x - r, c.y - r)
+
+        // Machined outer housing and concentric energy channels.
+        drawCircle(Color(0xFF142D40), r * 1.12f, c, style = Stroke(r * 0.13f))
+        drawCircle(Color(0xFF42677A), r * 1.04f, c, style = Stroke(r * 0.025f))
+        drawCircle(ReactorCyan.copy(alpha = 0.20f), r * 0.94f, c, style = Stroke(r * 0.035f))
+        drawCircle(Color(0xFF1B536B), r * 0.78f, c, style = Stroke(r * 0.11f))
+        drawCircle(ReactorCyan.copy(alpha = 0.24f), r * 0.61f, c, style = Stroke(r * 0.035f))
+
+        // Segmented rotating turbine rings.
+        rotate(rotation, c) {
+            for (i in 0 until 12) {
+                drawArc(
+                    color = if (i % 3 == 0) ReactorCyan else Color(0xFF477D91),
+                    startAngle = i * 30f + 3f, sweepAngle = 17f, useCenter = false,
+                    topLeft = top, size = ring, style = Stroke(r * 0.045f)
+                )
+            }
+            for (i in 0 until 24) {
+                val a = Math.toRadians((i * 15.0))
+                val inner = r * 0.98f
+                val outer = r * (if (i % 3 == 0) 1.08f else 1.035f)
+                val p1 = Offset(c.x + kotlin.math.cos(a).toFloat() * inner, c.y + kotlin.math.sin(a).toFloat() * inner)
+                val p2 = Offset(c.x + kotlin.math.cos(a).toFloat() * outer, c.y + kotlin.math.sin(a).toFloat() * outer)
+                drawLine(if (i % 3 == 0) ReactorCyan else Color(0xFF66899A), p1, p2, strokeWidth = r * 0.025f)
+            }
+        }
+        rotate(counterRotation, c) {
+            drawArc(ReactorCyan, 205f, 72f, false, top, ring, style = Stroke(r * 0.075f))
+            drawArc(Color(0xFF3B91A8), 25f, 72f, false, top, ring, style = Stroke(r * 0.06f))
+            for (i in 0 until 6) {
+                val a = Math.toRadians((i * 60.0))
+                val p = Offset(c.x + kotlin.math.cos(a).toFloat() * r * 0.48f, c.y + kotlin.math.sin(a).toFloat() * r * 0.48f)
+                drawCircle(Color(0xFF8CEEFF), r * 0.035f, p)
+            }
+        }
+        drawCircle(Color(0xFF071522), r * 0.38f, c, style = Stroke(r * 0.055f))
+        drawCircle(ReactorCyan.copy(alpha = 0.12f), r * 0.31f * pulse, c)
+        drawCircle(ReactorCyan.copy(alpha = 0.85f), r * 0.19f * pulse, c)
+        drawCircle(Color.White.copy(alpha = 0.92f), r * 0.065f * pulse, c)
     }
 }
