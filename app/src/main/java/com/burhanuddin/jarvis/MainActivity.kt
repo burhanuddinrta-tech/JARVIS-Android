@@ -1,6 +1,8 @@
 package com.burhanuddin.jarvis
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +58,9 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             var input by remember { mutableStateOf("") }
             var busy by remember { mutableStateOf(false) }
             var status by remember { mutableStateOf("ONLINE") }
+            var updateStatus by remember { mutableStateOf("Updates not checked") }
+            var updateUrl by remember { mutableStateOf<String?>(null) }
+            var checkingUpdate by remember { mutableStateOf(false) }
 
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = ReactorCyan, background = DeepNavy, surface = PanelNavy,
@@ -74,8 +79,25 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                                 Text("J.A.R.V.I.S.", color = ReactorCyan, fontSize = 22.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 Text("PERSONAL AI SYSTEM", color = Color(0xFF8BAFC2), fontSize = 9.sp, letterSpacing = 2.sp)
                             }
-                            Surface(color = Color(0xFF103044), shape = RoundedCornerShape(30.dp)) {
-                                Text("● $status", Modifier.padding(horizontal = 11.dp, vertical = 7.dp), color = ReactorCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Column(horizontalAlignment = Alignment.End) {
+                                Surface(color = Color(0xFF103044), shape = RoundedCornerShape(30.dp)) {
+                                    Text("● $status", Modifier.padding(horizontal = 11.dp, vertical = 7.dp), color = ReactorCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(
+                                    onClick = {
+                                        checkingUpdate = true
+                                        updateStatus = "Checking for updates..."
+                                        updateUrl = null
+                                        lifecycleScope.launch {
+                                            val result = withContext(Dispatchers.IO) { findJarvisUpdate() }
+                                            updateStatus = result.first
+                                            updateUrl = result.second
+                                            checkingUpdate = false
+                                        }
+                                    },
+                                    enabled = !checkingUpdate,
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                                ) { Text(if (checkingUpdate) "CHECKING..." else "CHECK UPDATE", color = ReactorCyan, fontSize = 9.sp) }
                             }
                         }
 
@@ -167,10 +189,61 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                             }
                         }
                         Spacer(Modifier.height(8.dp))
+                        if (updateStatus != "Updates not checked") {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(updateStatus, Modifier.weight(1f), color = if (updateUrl != null) ReactorCyan else Color(0xFF91AFC0), fontSize = 10.sp)
+                                if (updateUrl != null) {
+                                    TextButton(onClick = {
+                                        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(updateUrl))) }
+                                    }) { Text("DOWNLOAD", color = ReactorCyan, fontSize = 10.sp) }
+                                }
+                            }
+                        }
                         Text("SECURE CONNECTION  •  INTERNET REQUIRED  •  OFFLINE AI NOT INSTALLED", Modifier.fillMaxWidth(), color = Color(0xFF58788C), fontSize = 8.sp, letterSpacing = 1.sp)
                     }
                 }
             }
+        }
+    }
+
+    private fun findJarvisUpdate(): Pair<String, String?> {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = (URL("https://api.github.com/repos/burhanuddinrta-tech/JARVIS-Android/releases/latest").openConnection() as HttpURLConnection).apply {
+                connectTimeout = 12000
+                readTimeout = 12000
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("User-Agent", "JARVIS-Android")
+            }
+            if (connection.responseCode !in 200..299) return "Unable to check updates right now." to null
+            val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+            val latest = json.optString("tag_name").removePrefix("v")
+            val current = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty().removePrefix("v")
+            fun parts(value: String) = value.split(".", "-", "+").map { it.toIntOrNull() ?: 0 }
+            val a = parts(latest)
+            val b = parts(current)
+            val newer = (0 until maxOf(a.size, b.size)).firstNotNullOfOrNull { i ->
+                val diff = a.getOrElse(i) { 0 }.compareTo(b.getOrElse(i) { 0 })
+                if (diff == 0) null else diff > 0
+            } ?: false
+            val assets = json.optJSONArray("assets") ?: JSONArray()
+            var apkUrl: String? = null
+            for (i in 0 until assets.length()) {
+                val asset = assets.optJSONObject(i) ?: continue
+                if (asset.optString("name").endsWith(".apk", ignoreCase = true)) {
+                    apkUrl = asset.optString("browser_download_url").takeIf { it.startsWith("https://") }
+                    if (apkUrl != null) break
+                }
+            }
+            when {
+                !newer -> "JARVIS is up to date (v$current)." to null
+                apkUrl == null -> "A new version is listed, but its APK is not available yet." to null
+                else -> "Update available: v$latest" to apkUrl
+            }
+        } catch (_: Exception) {
+            "Update check failed. Please try again later." to null
+        } finally {
+            connection?.disconnect()
         }
     }
 
