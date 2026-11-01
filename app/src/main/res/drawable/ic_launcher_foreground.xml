@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@drawable/arc_reactor"
-    android:gravity="center"
-    android:filter="true" />
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:left="16%"
+        android:top="16%"
+        android:right="16%"
+        android:bottom="16%">
+        <bitmap
+            android:src="@drawable/arc_reactor"
+            android:gravity="fill" />
+    </item>
+</layer-list>
