@@ -38,7 +38,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 
-private const val JARVIS_API = "https://openmind-ai-ursbf6.v2.appdeploy.ai/api/chat"
+private const val JARVIS_API = "https://jarvis-ai-independent.vercel.app/api/chat"
 
 data class ChatMessage(val role: String, val content: String)
 
@@ -262,7 +262,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             connection = (URL(JARVIS_API).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 20000
-                readTimeout = 60000
+                readTimeout = 28000
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 setRequestProperty("Accept", "application/json")
