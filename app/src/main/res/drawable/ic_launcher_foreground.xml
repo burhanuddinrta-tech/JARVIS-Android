@@ -5,7 +5,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <path android:pathData="M54,3a51,51 0,1 0,0 102a51,51 0,1 0,0 -102">
+    <path android:pathData="M54,3a51,51 0,1 0,0 102a51,51 0,1 0,0 -102" android:strokeWidth="2.2">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial" android:centerX="37" android:centerY="26" android:gradientRadius="86">
                 <item android:offset="0" android:color="#35596A"/>
@@ -21,7 +21,6 @@
                 <item android:offset="1" android:color="#173445"/>
             </gradient>
         </aapt:attr>
-        <aapt:attr name="android:strokeWidth"><size android:value="2.2dp"/></aapt:attr>
     </path>
 
     <path android:pathData="M54,11a43,43 0,1 0,0 86a43,43 0,1 0,0 -86" android:fillColor="#07131D" android:strokeColor="#4B8197" android:strokeWidth="2.2"/>
@@ -53,7 +52,7 @@
     <group android:pivotX="54" android:pivotY="54" android:rotation="240"><path android:pathData="M51,34L57,34L62,46L46,46Z" android:fillColor="#438AA6" android:strokeColor="#B8E9F7" android:strokeWidth="0.7"/></group>
     <group android:pivotX="54" android:pivotY="54" android:rotation="300"><path android:pathData="M51,34L57,34L62,46L46,46Z" android:fillColor="#438AA6" android:strokeColor="#B8E9F7" android:strokeWidth="0.7"/></group>
 
-    <path android:pathData="M54,40a14,14 0,1 0,0 28a14,14 0,1 0,0 -28">
+    <path android:pathData="M54,40a14,14 0,1 0,0 28a14,14 0,1 0,0 -28" android:strokeWidth="1.8">
         <aapt:attr name="android:fillColor">
             <gradient android:type="radial" android:centerX="49" android:centerY="46" android:gradientRadius="22">
                 <item android:offset="0" android:color="#F7FFFF"/>
@@ -63,7 +62,6 @@
             </gradient>
         </aapt:attr>
         <aapt:attr name="android:strokeColor"><color android:color="#B8F5FF"/></aapt:attr>
-        <aapt:attr name="android:strokeWidth"><size android:value="1.8dp"/></aapt:attr>
     </path>
     <path android:pathData="M54,48a6,6 0,1 0,0 12a6,6 0,1 0,0 -12" android:fillColor="#FFFFFF"/>
     <path android:pathData="M54,49a5,5 0,1 0,0 10a5,5 0,1 0,0 -10" android:fillColor="#DDFBFF" android:strokeColor="#FFFFFF" android:strokeWidth="0.7"/>
