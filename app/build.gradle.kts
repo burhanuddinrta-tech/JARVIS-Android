@@ -12,8 +12,8 @@ android {
         applicationId = "com.burhanuddin.jarvis"
         minSdk = 26
         targetSdk = 35
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 3
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.2"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 4
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.3"
     }
 
     signingConfigs {

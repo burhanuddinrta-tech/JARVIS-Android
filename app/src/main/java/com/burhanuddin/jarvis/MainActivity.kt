@@ -9,6 +9,7 @@ import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceError
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -28,6 +29,9 @@ class MainActivity : ComponentActivity() {
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private val updateExecutor = Executors.newSingleThreadExecutor()
     private var updateDialogShown = false
+    private val jarvisUrl = "https://jarvis-ai-independent.vercel.app/"
+    private var cacheFallbackAttempted = false
+    private val reactorImageBase64 = "$reactor"
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         fileChooserCallback?.onReceiveValue(uris.toTypedArray())
@@ -80,6 +84,30 @@ class MainActivity : ComponentActivity() {
                     true
                 }
             }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame != true || view == null) return
+                if (!cacheFallbackAttempted) {
+                    cacheFallbackAttempted = true
+                    view.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                    view.loadUrl(jarvisUrl)
+                } else {
+                    showOfflineFallback(view)
+                }
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                if (url?.startsWith(jarvisUrl) == true) {
+                    view?.settings?.cacheMode = WebSettings.LOAD_DEFAULT
+                    cacheFallbackAttempted = false
+                }
+            }
         }
         webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -104,7 +132,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        webView.loadUrl("https://jarvis-ai-independent.vercel.app/")
+        webView.loadUrl(jarvisUrl)
         checkForUpdates()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -113,6 +141,44 @@ class MainActivity : ComponentActivity() {
         })
     }
 
+
+    private fun showOfflineFallback(view: WebView) {
+        val html = """
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>J.A.R.V.I.S.</title>
+              <style>
+                * { box-sizing: border-box; }
+                body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; color: #eaf7ff; background: radial-gradient(ellipse at center, #102b3b 0%, #050a10 62%, #020407 100%); font-family: system-ui, sans-serif; text-align: center; }
+                main { width: 100%; max-width: 430px; }
+                img { display: block; width: 132px; height: 132px; object-fit: contain; margin: 0 auto 22px; filter: drop-shadow(0 0 20px #20bce977); }
+                h1 { margin: 0; letter-spacing: .22em; font-size: 22px; }
+                .sub { margin: 9px 0 34px; color: #82bfd6; font-size: 11px; letter-spacing: .2em; }
+                section { padding: 22px; border: 1px solid #28576c; border-radius: 18px; background: #0a1722; }
+                h2 { margin: 0 0 10px; font-size: 18px; }
+                p { margin: 0; color: #a4b9c5; font-size: 14px; line-height: 1.65; }
+                button { margin-top: 22px; padding: 14px 22px; border: 0; border-radius: 12px; background: #23a7cf; color: #031018; font-weight: 800; font-size: 14px; }
+              </style>
+            </head>
+            <body>
+              <main>
+                <img src="data:image/webp;base64,$reactorImageBase64" alt="JARVIS arc reactor">
+                <h1>J.A.R.V.I.S.</h1>
+                <div class="sub">PERSONAL AI SYSTEM</div>
+                <section>
+                  <h2>Offline mode</h2>
+                  <p>The JARVIS interface is ready, but Gemini needs an internet connection. Reconnect and try again to continue your chats.</p>
+                </section>
+                <button onclick="location.href='$jarvisUrl'">Retry connection</button>
+              </main>
+            </body>
+            </html>
+        """.trimIndent()
+        view.loadDataWithBaseURL(jarvisUrl, html, "text/html", "UTF-8", null)
+    }
 
     private fun checkForUpdates() {
         updateExecutor.execute {
